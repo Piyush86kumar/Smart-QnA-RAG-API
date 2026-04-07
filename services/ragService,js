@@ -1,0 +1,60 @@
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Document = require('../models/Document');
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+const askQuestion = async (question) => {
+  // Find relevant documents
+  const docs = await Document.find(
+    { $text: { $search: question } },
+    { score: { $meta: 'textScore' } }
+  )
+    .sort({ score: { $meta: 'textScore' } })
+    .limit(3);
+
+  if (docs.length === 0) {
+    return {
+      answer: 'I could not find relevant information to answer your question.',
+      sources: [],
+      confidence: 'low'
+    };
+  }
+
+  // Create context from documents
+  const context = docs.map(doc => 
+    `[${doc._id}] ${doc.title}: ${doc.content}`
+  ).join('\n\n');
+
+  const prompt = `Based on the following context, answer the question. Only use information from the context.
+
+Context:
+${context}
+
+Question: ${question}
+
+Respond with JSON format: {"answer": "...", "sources": ["doc1", "doc2"], "confidence": "high|medium|low"}`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response.text();
+    
+    // Parse JSON response
+    const parsed = JSON.parse(response.replace(/```json\n?|\n?```/g, ''));
+    
+    return {
+      answer: parsed.answer,
+      sources: parsed.sources || docs.map(d => d._id.toString()),
+      confidence: parsed.confidence || 'medium'
+    };
+  } catch (error) {
+    console.error('LLM error:', error);
+    return {
+      answer: 'Error generating response. Please try again.',
+      sources: docs.map(d => d._id.toString()),
+      confidence: 'low'
+    };
+  }
+};
+
+module.exports = { askQuestion };
