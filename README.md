@@ -27,47 +27,6 @@ docker-compose up --build
 docker-compose run --rm app npm run seed
 ```
 
-## API Endpoints
-
-### Register
-```bash
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name": "John Doe", "email": "john@example.com", "password": "password123"}'
-```
-
-### Login
-```bash
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "john@example.com", "password": "password123"}'
-```
-
-### Ask Question
-```bash
-curl -X POST http://localhost:3000/api/ask \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your_token>" \
-  -d '{"question": "What is the refund policy?"}'
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "answer": "Refunds are processed within 5-7 business days...",
-    "sources": ["64f1a2b3c4d5e6f7a8b9c0d1"],
-    "confidence": "high"
-  }
-}
-```
-
-### Health Check
-```bash
-curl http://localhost:3000/health
-```
-
 ## Environment Variables
 
 | Variable | Required | Description |
